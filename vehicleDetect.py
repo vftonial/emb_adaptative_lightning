@@ -93,6 +93,11 @@ num_detections = detection_graph.get_tensor_by_name('num_detections:0')
 # Initialize webcam feed
 video = cv2.VideoCapture("damn_highbeams_edit.mp4")
 
+img_on = cv2.imread("main-beam_cinza.png",cv2.IMREAD_COLOR)
+img_off = cv2.imread("main-beam_cinza_cinza.png",cv2.IMREAD_COLOR)
+
+cv2.namedWindow("Luz_farol")
+
 while(True):
 
     # Acquire frame and expand frame dimensions to have shape: [1, None, None, 3]
@@ -139,6 +144,7 @@ while(True):
         TTL -= 1
 
     if TTL <= 0:
+        cv2.imshow("Luz_farol", img_off)
         print("TTL less than 0. High Beams OFF.")
 
     # If zero vehicles detected, turn all the LEDs ON
@@ -147,6 +153,7 @@ while(True):
         TTL += 1
 
     if TTL > 0:
+        cv2.imshow("Luz_farol", img_on)
         print("TTL higher than 0. High Beams ON.")
 
     if TTL >= 50:
