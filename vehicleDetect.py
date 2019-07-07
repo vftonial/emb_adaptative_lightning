@@ -3,6 +3,8 @@
 ################################################################################
 # BY: CAN OZCIVELEK
 # DATE: OCTOBER 2018
+# MODIFIED BY: LEO MARQUES, PEDRO TRINDADE, VICTOR FUNIAL
+# MODIFIED DATE: JULY 2019
 # DESCRIPTION: THIS PROJECT MAKES USE OF A CAMERA TO ANALYZE THE ROAD AND DETECT
 #              VEHICLES. THEN  SENDS  THE  DETECTED  VEHICLES  POSITIONS TO  THE
 #              CONTROLLER  WHICH  CONTROLS  THE  LED  MODULE TO TURN  INDIVIDUAL
@@ -13,7 +15,8 @@
 #
 # THIS PROJECT CONSISTS OF 2 SYSTEMS IN COMMUNICATION:
 # 1. PYTHON (VEHICLE DETECTION AT NIGHT)
-# 2. ARDUINO (LED MODULE CONTROL)
+# 2. RASPBERY (BEAM CONTROL)
+# * THE ORIGINAL PROJECT USED AN ARDUINO FOR LED CONTROL
 ################################################################################
 
 
@@ -23,13 +26,261 @@ import cv2
 import numpy as np
 import tensorflow as tf
 import time
-#import pyautogui, sys
 import serial
 from object_detection.utils import label_map_util
 from object_detection.utils import visualization_utils as vis_util
 
-TTL = 50
+# THRESHOLDS TO ACTIVATE/DEACTIVATE HIGH BEAM
+TTL = 25
+TTL_MAX = 25
+TTL_MIN = -25
+MIN_THRESH = 0.75
 
+################################################################################
+#### START - FUNCTION TO HANDLE SINGLE VEHICLE DETECTED ########################
+def drawCurtainSingle(inpFrame, inpX):
+
+    ##Get the frame width
+    fWidth = inpFrame.shape[1]
+    #print("Frame", fWidth)
+    #print("Single Car Detected")
+
+    # Calculate the width of each column to be turned
+    # ON/OFF based on the detected vehicle positions
+    col1 = fWidth * 0.1 - 20
+    col2 = fWidth * 0.2
+    col3 = fWidth * 0.3
+    col4 = fWidth * 0.4
+    col5 = fWidth * 0.5
+    col6 = fWidth * 0.6
+    col7 = fWidth * 0.7
+    col8 = fWidth * 0.8
+    col9 = fWidth * 0.9
+
+    # A slight delay to prevent LEDs from flickering too much
+    time.sleep(0.05)
+
+    ### START - If checks to determine which column to be turned ON/OFF ########
+    ### ############################################################### ########
+
+    if(inpX < col1):
+        posX1 = "0"
+        #print("POSX1:", posX1.encode())
+
+    elif(inpX >= col1 and inpX < col2):
+        posX1 = "1"
+        #print("POSX1:", posX1.encode())
+
+    elif(inpX >= col2 and inpX < col3):
+        posX1 = "2"
+        #print("POSX1:", posX1.encode())
+
+    elif(inpX >= col3 and inpX < col4):
+        posX1 = "3"
+        #print("POSX1:", posX1.encode())
+
+    elif(inpX >= col4 and inpX < col5):
+        posX1 = "4"
+        #print("POSX1:", posX1.encode())
+
+    elif(inpX >= col5 and inpX < col6):
+        posX1 = "5"
+        #print("POSX1:", posX1.encode())
+
+    elif(inpX >= col6 and inpX < col7):
+        posX1 = "6"
+        #print("POSX1:", posX1.encode())
+
+    elif(inpX >= col7 and inpX < col8):
+        posX1 = "7"
+        #print("POSX1:", posX1.encode())
+
+    elif(inpX >= col8 and inpX < col9):
+
+        posX1 = "8"
+        #print("POSX1:", posX1.encode())
+
+    elif(inpX >= col9):
+        posX1 = "9"
+        #print("POSX1:", posX1.encode())
+    ### ############################################################# ##########
+    ### END - If checks to determine which column to be turned ON/OFF ##########
+
+    # Define the final variable to be sent over the serial connection
+    # to the LED control module
+    # In this project, the variables that are sent to the LED module
+    # must start with an "x"
+    # Since there is only one detected vehicle in this function,
+    # Second character is "y" and only the third character holds
+    # the position of the detected vehicle'''
+    posX4 = "x" + "y" + posX1
+
+    #print("POSX4: ", posX4.encode())
+
+    # Write the final data to the serial port
+#### END - FUNCTION TO HANDLE SINGLE VEHICLE DETECTED ##########################
+#### ################################################ ##########################
+
+
+################################################################################
+#### START - FUNCTION TO HANDLE TWO VEHICLES DETECTED ##########################
+def drawCurtainDouble(inpFrame, inpX1, inpX2):
+
+    ##Get the frame width
+    fWidth = inpFrame.shape[1]
+    #print("Frame", fWidth)
+    #print("2 Cars Detected")
+
+    # Calculate the width of each column to be turned
+    # ON/OFF based on the detected vehicle positions
+    col1 = fWidth * 0.1 - 20
+    col2 = fWidth * 0.2
+    col3 = fWidth * 0.3
+    col4 = fWidth * 0.4
+    col5 = fWidth * 0.5
+    col6 = fWidth * 0.6
+    col7 = fWidth * 0.7
+    col8 = fWidth * 0.8
+    col9 = fWidth * 0.9
+
+    # A slight delay to prevent LEDs from flickering too much
+    time.sleep(0.05)
+
+    ### START - If checks to determine which column to be turned ON/OFF ########
+    ### For the first detected vehicle
+    ### ############################################################### ########
+    if(inpX1 < col1):
+        posX1 = "0"
+        #print("POSX1:", posX1.encode())
+
+    if(inpX1 >= col1 and inpX1 < col2):
+        posX1 = "1"
+        #print("POSX1:", posX1.encode())
+
+    if(inpX1 >= col2 and inpX1 < col3):
+        posX1 = "2"
+        #print("POSX1:", posX1.encode())
+
+    if(inpX1 >= col3 and inpX1 < col4):
+        posX1 = "3"
+        #print("POSX1:", posX1.encode())
+
+    if(inpX1 >= col4 and inpX1 < col5):
+        posX1 = "4"
+        #print("POSX1:", posX1.encode())
+
+    if(inpX1 >= col5 and inpX1 < col6):
+        posX1 = "5"
+        #print("POSX1:", posX1.encode())
+
+    if(inpX1 >= col6 and inpX1 < col7):
+        posX1 = "6"
+        #print("POSX1:", posX1.encode())
+
+    if(inpX1 >= col7 and inpX1 < col8):
+        posX1 = "7"
+        #print("POSX1:", posX1.encode())
+
+    if(inpX1 >= col8 and inpX1 < col9):
+        posX1 = "8"
+        #print("POSX1:", posX1.encode())
+
+    if(inpX1 >= col9):
+        posX1 = "0"
+        #print("POSX1:", posX1.encode())
+    ##END - If checks to determine which column to be turned ON/OFF
+    ##For the first detected vehicle
+
+    ##START - If checks to determine which column to be turned ON/OFF
+    ##For the second detected vehicle
+    if(inpX2 < col1):
+        posX2 = "0"
+        #print("POSX2:", posX2.encode())
+
+    if(inpX2 >= col1 and inpX2 < col2):
+        posX2 = "1"
+        #print("POSX2:", posX2.encode())
+
+    if(inpX2 >= col2 and inpX2 < col3):
+        posX2 = "2"
+        #print("POSX2:", posX2.encode())
+
+    if(inpX2 >= col3 and inpX2 < col4):
+        posX2 = "3"
+        #print("POSX2:", posX2.encode())
+
+    if(inpX2 >= col4 and inpX2 < col5):
+        posX2 = "4"
+        #print("POSX2:", posX2.encode())
+
+    if(inpX2 >= col5 and inpX2 < col6):
+        posX2 = "5"
+        #print("POSX2:", posX2.encode())
+
+    if(inpX2 >= col6 and inpX2 < col7):
+        posX2 = "6"
+        #print("POSX2:", posX2.encode())
+
+    if(inpX2 >= col7 and inpX2 < col8):
+        posX2 = "7"
+        #print("POSX2:", posX2.encode())
+
+    if(inpX2 >= col8 and inpX2 < col9):
+        posX2 = "8"
+        #print("POSX2:", posX2.encode())
+
+    if(inpX2 >= col9):
+        posX2 = "0"
+        #print("POSX2:", posX2.encode())
+    ### ############################################################### ########
+    ### END - If checks to determine which column to be turned ON/OFF ##########
+    ### For the second detected vehicle
+
+    # Define the final variable to be sent over the serial connection
+    # to the LED control module
+    # In this project, the variables that are sent to the LED module
+    # must start with an "x"
+    # Since there is two detected vehicles in this function,
+    # The second & third characters hold the position of the detected vehicles
+    posX3 = "x" + posX1 + posX2
+
+    #print("POSX3: ", posX3.encode())
+
+
+#### END - FUNCTION TO HANDLE TWO VEHICLES DETECTED ############################
+#### ############################################## ############################
+
+
+#### ################################################################## ########
+#### START - FUNCTION TO HANDLE ZERO OR MORE THAN TWO VEHICLES DETECTED ########
+def ledOnOff(state, inpSer):
+    # If state is 1, switch all the LEDs ON
+    # Since there is no cars detected
+    if state == 1:
+        posX = "0"
+        posX1 = "x" + "y" + posX
+        print("POSX1: ", posX1)
+
+    # If state is 0, switch all the LEDs OFF
+    # Since there is more than 2 cars detected
+    if state == 0:
+        posX = "9"
+        posX1 = "x" + "y" + posX
+        print("POSX1: ", posX1)
+
+    # Write the final data to the serial port
+    inpSer.write(posX1.encode())
+#### END - FUNCTION TO HANDLE ZERO OR MORE THAN TWO VEHICLES DETECTED ##########
+################################################################################
+
+################################################################################
+######## END - FUNCTIONS TO SEND DATA TO LED MODULE ############################
+################################################################################
+
+################################################################################
+################################################################################
+################################################################################
+################################################################################
 
 ################################################################################
 ######## START - MAIN FUNCTION #################################################
@@ -91,12 +342,14 @@ num_detections = detection_graph.get_tensor_by_name('num_detections:0')
 
 
 # Initialize webcam feed
-video = cv2.VideoCapture("damn_highbeams_edit.mp4")
+video = cv2.VideoCapture("leo4.mp4")
+
 
 img_on = cv2.imread("main-beam_cinza.png",cv2.IMREAD_COLOR)
 img_off = cv2.imread("main-beam_cinza_cinza.png",cv2.IMREAD_COLOR)
 
 cv2.namedWindow("Luz_farol")
+
 
 while(True):
 
@@ -122,25 +375,55 @@ while(True):
         category_index,
         use_normalized_coordinates=True,
         line_thickness=4,
-        min_score_thresh=0.80)
+        min_score_thresh=MIN_THRESH)
 
+
+    # Processing the detected vehicles
+    medX1 = None    # Variable for the position of first detected vehicle
+    medX2 = None    # Variable for the position of second detected vehicle
+    first = True    # Variable to turn False when the loop is entered 2nd time
     final_score = np.squeeze(scores)
     count = 0       # Variable to count the detected vehicles
 
-    ############################################################################
-    ### START - Loop to detect up to 5 vehicles per frame ####################
+
     for i in range(5):
-        if scores is None or final_score[i] > 0.8:
+        if scores is None or final_score[i] > MIN_THRESH:
+            #Determining bounding box coordinates
+            ymin = int((boxes[0][i][0] * height))
+            xmin = int((boxes[0][i][1] * width))
+            ymax = int((boxes[0][i][2] * height))
+            xmax = int((boxes[0][i][3] * width))
+
+            if first:       # If loop is entered for the first time
+                medX1 = (xmin + xmax) / 2
+                first = False
+                second = True
+
+            elif second:    # If loop is entered for the second time
+                medX2 = (xmin + xmax) / 2
+                second = False
             count = count + 1
 
-    ### END - Loop to detect up to 5 vehicles per frame ######################
+    ### END - Loop to detect up to 100 vehicles per frame ######################
     ############################################################################
 
-    #print(TTL)
-    #print(count)
-    
+    print(TTL)
+    print(count)
+    # Print the positions and number of detected vehicles
+    #print(medX1, ":", medX2)
+    #print("Counted: ", count)
+
+    # If single vehicle is detected, call the drawCurtainSingle() function
+    if(count == 1):
+        drawCurtainSingle(frame, medX1)
+
+    # If two vehicles are detected, call the drawCurtainDouble() function
+    elif(count == 2):
+        drawCurtainDouble(frame, medX1, medX2)
+
+    # If more than 1 vehicles detected, turn all the LEDs OFF
     if(count >= 1):
-        #print("Cars detected. Reducing TTL.")
+        print("Cars detected. Reducing TTL.")
         TTL -= 1
 
     if TTL <= 0:
@@ -149,20 +432,19 @@ while(True):
 
     # If zero vehicles detected, turn all the LEDs ON
     if(count == 0):
-        #print("No cars detected. Increasing TTL.")
+        print("No cars detected. Increasing TTL.")
         TTL += 1
 
-    if TTL > 0:
+    if TTL >= 0:
         cv2.imshow("Luz_farol", img_on)
         print("TTL higher than 0. High Beams ON.")
 
-    if TTL >= 50:
-        TTL = 50
-    elif TTL <= -50:
-        TTL = -50
-
+    if TTL >= TTL_MAX:
+        TTL = TTL_MAX
+    elif TTL <= TTL_MIN:
+        TTL = TTL_MIN
     # Display the final image
-    cv2.imshow('Vehicle Detection at Night', frame)
+    cv2.imshow('Farol Adptativo', frame)
 
     # Press 'ENTER' to quit
     if cv2.waitKey(1) == 13:
